@@ -1,0 +1,35 @@
+# Prefix plugin
+prefix: '&8「&c1st&8」&7» '
+
+# Comanda Help
+command-help-description: '&8 - &c/votechecker help &7- Afiseaza meniul de ajutor... Ai ajuns la destinatie'
+command-help-title: '&cComenzi disponibile:'
+
+# Diverse
+no-permission: '&cNu ai permisiunea pentru aceasta actiune!'
+unknown-command: '&cComanda necunoscuta &4%input%&c.'
+invalid-command-usage: '&cUtilizare invalida a comenzii.'
+
+# Mesaj comanda de baza
+base-command-color: '&7'
+base-command-help: '&7Foloseste &c/votechecker help &7pentru informatii despre comenzi.'
+
+# Comanda Reload
+command-reload-description: '&8 - &c/votechecker reload &7- Reincarca pluginul'
+command-reload-success: '&7Fisierele de configurare si localizare au fost reincarcate.'
+
+# Verificare vot
+votechecker-not-voted: |
+  &7Hmm... se pare ca nu ai votat astazi.
+  &7Foloseste &c/ᴠᴏᴛᴇ &7pentru a putea folosi comanda dorita!
+
+# Comanda Info
+command-info-description: '&8 - &c/votechecker info &7- Afiseaza informatii despre plugin'
+
+# Management baza de date
+command-cleardb-description: '&8 - &c/votechecker cleardb &7- Sterge toate voturile salvate din baza de date'
+command-cleardb-warning: '&e⚠ ATENTIE: &cAceasta actiune va sterge permanent toate voturile din baza de date. &7Daca esti absolut sigur, tasteaza &a/votechecker cleardb confirm&7.'
+command-cleardb-success: '&cToate voturile au fost &asterse cu succes &cdin baza de date.'
+
+# Comanda Version
+command-version-description: '&8 - &c/votechecker version &7- Afiseaza versiunea curenta a pluginului VoteChecker'

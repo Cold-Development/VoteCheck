@@ -1,0 +1,36 @@
+name: VoteChecker
+version: '@version@'
+main: dev.padrewin.votechecker.VoteChecker
+api-version: '1.21'
+authors: [ padrewin ]
+softdepend: [Votifier]
+
+commands:
+  votechecker:
+    description: "Base command for VoteChecker"
+    aliases: [vcheck, vchecker, votecheck, checkvote]
+    permission: "votechecker.base"
+
+permissions:
+  votechecker.*:
+    description: Root permission for VoteChecker
+    children:
+      votechecker.reload: true
+      votechecker.wipe: true
+      votechecker.info: true
+
+  votechecker.reload:
+    description: Allows reloading plugin config and locale
+    default: op
+
+  votechecker.wipe:
+    description: Gives access to wipe the vote database
+    default: op
+
+  votechecker.info:
+    description: Allows viewing plugin configuration info
+    default: op
+
+  votechecker.bypass:
+    description: Allows using blocked commands without restrictions
+    default: op
