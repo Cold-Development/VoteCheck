@@ -8,6 +8,6 @@ import java.util.concurrent.CompletableFuture;
 public class VoteUtil {
 
     public static CompletableFuture<Boolean> hasVotedToday(Player player) {
-        return VoteChecker.getInstance().getDatabase().hasVotedTodayAsync(player.getUniqueId());
+    return VoteChecker.getInstance().getDatabase().hasVotedTodayAsync(player.getUniqueId(), player.getName());
     }
 }
