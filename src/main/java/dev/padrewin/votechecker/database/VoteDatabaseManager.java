@@ -61,7 +61,6 @@ public class VoteDatabaseManager {
         });
     }
 
-    /** ✅ Verifică dacă jucătorul (UUID + nume) a votat în ultimele 24h */
     public CompletableFuture<Boolean> hasVotedTodayAsync(UUID uuid, String playerName) {
         return CompletableFuture.supplyAsync(() -> {
             String query = "SELECT vote_time FROM votes WHERE player_uuid = ? AND player_name = ? ORDER BY vote_time DESC LIMIT 1";
@@ -76,10 +75,8 @@ public class VoteDatabaseManager {
                     long voteMillis = voteTimestamp.toInstant().toEpochMilli();
                     long nowMillis = System.currentTimeMillis();
 
-                    // 24 ore = 86.400.000 ms
                     long diff = nowMillis - voteMillis;
 
-                    // ✅ valid dacă a trecut <24h de la ultimul vot
                     return diff <= 86_400_000L;
                 }
 

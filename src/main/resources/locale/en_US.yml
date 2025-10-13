@@ -21,7 +21,7 @@ command-reload-success: '&7Configuration and locale files were reloaded.'
 # Checker
 votechecker-not-voted: |
   &7Hmm... looks like you didn't voted today.
-  &7Use &c/ᴠᴏᴛᴇ &7to use the desired command!
+  &7Use &c/ᴠᴏᴛᴇ &7to be able to proceed with &8[&c{command}&8] &7command!
 
 # Info Command
 command-info-description: '&8 - &c/votechecker info &7- Displays information about the plugin'

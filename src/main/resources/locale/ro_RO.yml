@@ -20,8 +20,8 @@ command-reload-success: '&7Fisierele de configurare si localizare au fost reinca
 
 # Verificare vot
 votechecker-not-voted: |
-  &7Hmm... se pare ca nu ai votat astazi.
-  &7Foloseste &c/ᴠᴏᴛᴇ &7pentru a putea folosi comanda dorita!
+  &7Hmm... se pare ca nu ai votat inca.
+  &7Voteaza folosind &c/ᴠᴏᴛᴇ &7pentru a utiliza &8[&c{command}&8]&7!
 
 # Comanda Info
 command-info-description: '&8 - &c/votechecker info &7- Afiseaza informatii despre plugin'

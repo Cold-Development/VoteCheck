@@ -41,12 +41,12 @@ public class VoteCheckListener implements Listener {
                         Bukkit.getScheduler().runTask(VoteChecker.getInstance(), () -> player.performCommand(raw));
                     } else {
                         Bukkit.getScheduler().runTask(VoteChecker.getInstance(), () -> {
-                            StringPlaceholders placeholders = StringPlaceholders.builder()
-                                    .add("{player}", player.getName())
-                                    .add("{command}", "/" + raw)
-                                    .build();
+                            String message = localeManager.getLocaleMessage("votechecker-not-voted")
+                                    .replace("{player}", player.getName())
+                                    .replace("{command}", "/" + raw);
 
-                            localeManager.sendMessage(player, "votechecker-not-voted", placeholders);
+                            String prefix = localeManager.getLocaleMessage("prefix");
+                            player.sendMessage(prefix + message);
                         });
                         debug("[BLOCK] " + player.getName() + " tried to use blocked command without voting.");
                     }
