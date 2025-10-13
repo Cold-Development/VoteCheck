@@ -1,12 +1,8 @@
 package dev.padrewin.votechecker.database;
 
 import dev.padrewin.votechecker.VoteChecker;
-import org.bukkit.Bukkit;
-
 import java.io.File;
 import java.sql.*;
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -65,23 +61,31 @@ public class VoteDatabaseManager {
         });
     }
 
-    public CompletableFuture<Boolean> hasVotedTodayAsync(UUID uuid) {
+    /** ✅ Verifică dacă jucătorul (UUID + nume) a votat în ultimele 24h */
+    public CompletableFuture<Boolean> hasVotedTodayAsync(UUID uuid, String playerName) {
         return CompletableFuture.supplyAsync(() -> {
-            LocalDate effectiveDate = LocalDate.now();
-            if (LocalTime.now().isBefore(LocalTime.of(7, 0))) {
-                effectiveDate = effectiveDate.minusDays(1);
-            }
-
-            String dateKey = effectiveDate.toString();
-            String query = "SELECT 1 FROM votes WHERE player_uuid = ? AND vote_time LIKE ? LIMIT 1";
+            String query = "SELECT vote_time FROM votes WHERE player_uuid = ? AND player_name = ? ORDER BY vote_time DESC LIMIT 1";
 
             try (PreparedStatement stmt = connection.prepareStatement(query)) {
                 stmt.setString(1, uuid.toString());
-                stmt.setString(2, dateKey + "%");
+                stmt.setString(2, playerName);
                 ResultSet rs = stmt.executeQuery();
-                return rs.next();
+
+                if (rs.next()) {
+                    Timestamp voteTimestamp = Timestamp.valueOf(rs.getString("vote_time"));
+                    long voteMillis = voteTimestamp.toInstant().toEpochMilli();
+                    long nowMillis = System.currentTimeMillis();
+
+                    // 24 ore = 86.400.000 ms
+                    long diff = nowMillis - voteMillis;
+
+                    // ✅ valid dacă a trecut <24h de la ultimul vot
+                    return diff <= 86_400_000L;
+                }
+
+                return false;
             } catch (SQLException e) {
-                plugin.getLogger().severe("Failed to check vote for " + uuid + ": " + e.getMessage());
+                plugin.getLogger().severe("Failed to check vote for " + playerName + " (" + uuid + "): " + e.getMessage());
                 return false;
             }
         });
@@ -127,5 +131,4 @@ public class VoteDatabaseManager {
             }
         } catch (SQLException ignored) {}
     }
-
 }
