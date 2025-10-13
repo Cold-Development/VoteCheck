@@ -1,0 +1,23 @@
+name: Java Compile Check
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  compile:
+    name: Compile Java Code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Compile project
+        run: mvn clean compile -DskipTests
