@@ -71,17 +71,34 @@ public class VoteDatabaseManager {
                 ResultSet rs = stmt.executeQuery();
 
                 if (rs.next()) {
-                    Timestamp voteTimestamp = Timestamp.valueOf(rs.getString("vote_time"));
-                    long voteMillis = voteTimestamp.toInstant().toEpochMilli();
+                    String rawTime = rs.getString("vote_time");
+
+                    java.time.LocalDateTime voteDateTime = java.time.LocalDateTime.parse(rawTime);
+                    long voteMillis = voteDateTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
                     long nowMillis = System.currentTimeMillis();
 
                     long diff = nowMillis - voteMillis;
+                    boolean votedRecently = diff <= 86_400_000L; // 24h
 
-                    return diff <= 86_400_000L;
+                    if (plugin.getConfig().getBoolean("debug")) {
+                        long hours = diff / 3_600_000;
+                        long minutes = (diff % 3_600_000) / 60_000;
+                        long seconds = (diff % 60_000) / 1000;
+
+                        String timeAgo = String.format("%dh %dm %ds", hours, minutes, seconds);
+                        plugin.getLogger().info("[DEBUG] " + playerName + " last vote: " + rawTime +
+                                " (" + timeAgo + " ago) → " + (votedRecently ? "VALID ✅" : "EXPIRED ❌"));
+                    }
+
+                    return votedRecently;
                 }
 
+                if (plugin.getConfig().getBoolean("debug")) {
+                    plugin.getLogger().info("[DEBUG] " + playerName + " has no votes on record ❌");
+                }
                 return false;
-            } catch (SQLException e) {
+
+            } catch (Exception e) {
                 plugin.getLogger().severe("Failed to check vote for " + playerName + " (" + uuid + "): " + e.getMessage());
                 return false;
             }
