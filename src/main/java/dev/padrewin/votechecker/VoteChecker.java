@@ -71,7 +71,7 @@ public final class VoteChecker extends ColdPlugin {
     @Override
     public void disable() {
         if (database != null) {
-            database.close();
+            database.shutdown();
         }
         getLogger().info("");
         getLogger().info(ANSI_PURPLE + "VoteChecker disabled." + ANSI_RESET);
@@ -81,7 +81,6 @@ public final class VoteChecker extends ColdPlugin {
     @Override
     public void reload() {
         super.reload();
-
         if (database != null) {
             database.reconnect();
         }

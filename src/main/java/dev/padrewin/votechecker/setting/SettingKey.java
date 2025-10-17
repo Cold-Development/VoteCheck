@@ -20,6 +20,19 @@ public class SettingKey {
             "Enable or disable the VoteChecker plugin entirely.",
             "If set to false, no commands will be blocked even if listed in 'blocked-commands'.");
 
+    public static final ColdSetting<String> VOTE_RESET = create(
+            "vote-reset", STRING, "06:59",
+            "Either a rolling duration (e.g. '24h', '12h', '1d')",
+            "or a daily reset time in 'HH:mm' (e.g. '07:00').",
+            "Examples: 24h  |  07:00"
+    );
+
+    public static final ColdSetting<String> VOTE_RESET_TIMEZONE = create(
+            "vote-reset-timezone", STRING, "Europe/Bucharest",
+            "IANA timezone for vote window calculation (e.g. 'Europe/Bucharest', 'UTC').",
+            "Used for both rolling duration anchors and daily reset cutoffs."
+    );
+
     public static final ColdSetting<String> BASE_COMMAND_REDIRECT = create("base-command-redirect", STRING, "", "Which command should we redirect to when using '/votechecker' with no subcommand specified?", "You can use a value here such as 'version' to show the output of '/votechecker version'", "If you have any aliases defined, do not use them here", "If left as blank, the default behavior of showing '/votechecker version' with bypassed permissions will be used");
 
     public static final ColdSetting<Boolean> DEBUG = create("debug", BOOLEAN, false,
