@@ -4,12 +4,15 @@ import dev.padrewin.colddev.ColdPlugin;
 import dev.padrewin.colddev.config.ColdSetting;
 import dev.padrewin.colddev.manager.Manager;
 import dev.padrewin.colddev.manager.PluginUpdateManager;
-import dev.padrewin.votechecker.listeners.VoteCheckListener;
+import dev.padrewin.votechecker.hook.CommandInterceptor;
+//import dev.padrewin.votechecker.listeners.VoteCheckListener;
 import dev.padrewin.votechecker.manager.CommandManager;
 import dev.padrewin.votechecker.manager.LocaleManager;
+import dev.padrewin.votechecker.placeholders.VoteExpansion;
 import dev.padrewin.votechecker.setting.SettingKey;
 import dev.padrewin.votechecker.database.VoteDatabaseManager;
 import dev.padrewin.votechecker.listeners.VoteListener;
+import org.bukkit.Bukkit;
 
 import java.io.File;
 import java.util.List;
@@ -42,9 +45,23 @@ public final class VoteChecker extends ColdPlugin {
         this.database = new VoteDatabaseManager(this);
 
         // Register listeners
-        getServer().getPluginManager().registerEvents(new VoteCheckListener(), this);
+        //getServer().getPluginManager().registerEvents(new VoteCheckListener(), this);
         getServer().getPluginManager().registerEvents(new VoteListener(this), this);
         getManager(PluginUpdateManager.class);
+
+        // Register PlaceholderAPI expansion with delay
+        if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            Bukkit.getScheduler().runTaskLater(this, () -> {
+                boolean registered = new VoteExpansion(this).register();
+                if (registered) {
+                    getLogger().info(ANSI_GREEN + "PlaceholderAPI expansion registered successfully!" + ANSI_RESET);
+                } else {
+                    getLogger().warning(ANSI_RED + "Failed to register PlaceholderAPI expansion!" + ANSI_RESET);
+                }
+            }, 20L); // 1-second delay
+        } else {
+            getLogger().warning(ANSI_YELLOW + "PlaceholderAPI not found! Placeholders will not work." + ANSI_RESET);
+        }
 
         // Banner
         String name = getDescription().getName();
@@ -66,6 +83,8 @@ public final class VoteChecker extends ColdPlugin {
 
         saveDefaultConfig();
         getLogger().info(ANSI_YELLOW + "VoteChecker loaded successfully!" + ANSI_RESET);
+        CommandInterceptor.register();
+
     }
 
     @Override

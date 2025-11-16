@@ -16,6 +16,38 @@ public class SettingKey {
 
     private static final List<ColdSetting<?>> KEYS = new ArrayList<>();
 
+    public static final ColdSetting<String> DATABASE_TYPE = create(
+            "database.type", STRING, "SQLITE"
+    );
+
+    public static final ColdSetting<Boolean> MYSQL_ENABLED = create(
+            "database.mysql.enabled", BOOLEAN, true
+    );
+    public static final ColdSetting<String> MYSQL_HOST = create(
+            "database.mysql.hostname", STRING, "127.0.0.1"
+    );
+    public static final ColdSetting<Integer> MYSQL_PORT = create(
+            "database.mysql.port", INTEGER, 3306
+    );
+    public static final ColdSetting<String> MYSQL_DATABASE = create(
+            "database.mysql.database-name", STRING, "votechecker"
+    );
+    public static final ColdSetting<String> MYSQL_USER = create(
+            "database.mysql.user-name", STRING, "root"
+    );
+    public static final ColdSetting<String> MYSQL_PASSWORD = create(
+            "database.mysql.user-password", STRING, "password"
+    );
+    public static final ColdSetting<Boolean> MYSQL_USE_SSL = create(
+            "database.mysql.use-ssl", BOOLEAN, false
+    );
+    public static final ColdSetting<Integer> MYSQL_POOL_SIZE = create(
+            "database.mysql.connection-pool-size", INTEGER, 3
+    );
+    public static final ColdSetting<String> MYSQL_TABLE_PREFIX = create(
+            "database.mysql.table-prefix", STRING, "vc_"
+    );
+
     public static final ColdSetting<Boolean> ENABLE_PLUGIN = create("enable-plugin", BOOLEAN, true,
             "Enable or disable the VoteChecker plugin entirely.",
             "If set to false, no commands will be blocked even if listed in 'blocked-commands'.");
@@ -50,16 +82,22 @@ public class SettingKey {
             "If true, the player must vote on all sites today to unlock commands.",
             "If false, one vote is enough.");
 
-    private static <T> ColdSetting<T> create(String key, ColdSettingSerializer<T> serializer, T defaultValue, String... comments) {
-        ColdSetting<T> setting = ColdSetting.backed(VoteChecker.getInstance(), key, serializer, defaultValue, comments);
+    private static <T> ColdSetting<T> create(String key, ColdSettingSerializer<T> serializer, T def, String... comments) {
+        ColdSetting<T> setting = ColdSetting.backed(VoteChecker.getInstance(), key, serializer, def, comments);
         KEYS.add(setting);
         return setting;
     }
 
-    private static ColdSetting<CommentedConfigurationSection> create(String key, String... comments) {
+    private static ColdSetting<CommentedConfigurationSection> createSection(String key, String... comments) {
         ColdSetting<CommentedConfigurationSection> setting = ColdSetting.backedSection(VoteChecker.getInstance(), key, comments);
         KEYS.add(setting);
         return setting;
+    }
+
+    private static void setDefault(CommentedConfigurationSection section, String key, Object value) {
+        if (!section.contains(key)) {
+            section.set(key, value);
+        }
     }
 
     public static List<ColdSetting<?>> getKeys() {

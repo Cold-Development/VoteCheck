@@ -27,44 +27,78 @@ public class VoteDatabaseManager {
         createTable();
     }
 
+    private String getTableName() {
+        boolean isMySQL = SettingKey.DATABASE_TYPE.get().equalsIgnoreCase("MYSQL");
+        String prefix = isMySQL ? SettingKey.MYSQL_TABLE_PREFIX.get() : "";
+        return prefix + "votes";
+    }
+
     private void connect() {
+        String type = SettingKey.DATABASE_TYPE.get().trim().toUpperCase();
+
         try {
-            File folder = plugin.getDataFolder();
-            if (!folder.exists()) folder.mkdirs();
+            if (type.equals("MYSQL")) {
+                String host = SettingKey.MYSQL_HOST.get();
+                int port = SettingKey.MYSQL_PORT.get();
+                String db = SettingKey.MYSQL_DATABASE.get();
+                String user = SettingKey.MYSQL_USER.get();
+                String pass = SettingKey.MYSQL_PASSWORD.get();
+                boolean ssl = SettingKey.MYSQL_USE_SSL.get();
 
-            String path = folder.getAbsolutePath() + File.separator + "votes.db";
-            connection = DriverManager.getConnection("jdbc:sqlite:" + path);
+                String url = "jdbc:mysql://" + host + ":" + port + "/" + db + "?useSSL=" + ssl + "&autoReconnect=true";
+                connection = DriverManager.getConnection(url, user, pass);
+                plugin.getLogger().info("Connected to MySQL database (" + db + ") ✅");
+            } else {
+                File folder = plugin.getDataFolder();
+                if (!folder.exists()) folder.mkdirs();
 
-            try (Statement s = connection.createStatement()) {
-                s.execute("PRAGMA journal_mode=WAL");
-                s.execute("PRAGMA busy_timeout=5000");
+                String path = folder.getAbsolutePath() + File.separator + "votes.db";
+                connection = DriverManager.getConnection("jdbc:sqlite:" + path);
+
+                try (Statement s = connection.createStatement()) {
+                    s.execute("PRAGMA journal_mode=WAL");
+                    s.execute("PRAGMA busy_timeout=5000");
+                }
+
+                plugin.getLogger().info("Connected to SQLite database (votes.db) ✅");
             }
-
-            plugin.getLogger().info("Connected to SQLite database (votes.db).");
         } catch (SQLException e) {
-            plugin.getLogger().severe("Failed to connect to database: " + e.getMessage());
+            plugin.getLogger().severe("Failed to connect to " + type + " database: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
+
     private void createTable() {
-        String create = "CREATE TABLE IF NOT EXISTS votes (" +
-                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                "player_uuid TEXT NOT NULL," +
-                "player_name TEXT NOT NULL," +
-                "service_name TEXT NOT NULL," +
-                "vote_time TEXT NOT NULL" +
+        boolean isMySQL = SettingKey.DATABASE_TYPE.get().equalsIgnoreCase("MYSQL");
+        String table = getTableName();
+
+        String idColumn = isMySQL
+                ? "id INT AUTO_INCREMENT PRIMARY KEY"
+                : "id INTEGER PRIMARY KEY AUTOINCREMENT";
+
+        String create = "CREATE TABLE IF NOT EXISTS " + table + " (" +
+                idColumn + "," +
+                "player_uuid VARCHAR(36) NOT NULL," +
+                "player_name VARCHAR(64) NOT NULL," +
+                "service_name VARCHAR(128) NOT NULL," +
+                "vote_time VARCHAR(64) NOT NULL" +
+                (isMySQL ? ", INDEX (player_uuid), INDEX (player_name)" : "") +
                 ");";
+
         try (Statement stmt = connection.createStatement()) {
             stmt.execute(create);
+            plugin.getLogger().info("Table '" + table + "' checked/created ✅");
         } catch (SQLException e) {
             plugin.getLogger().severe("Failed to create votes table: " + e.getMessage());
         }
     }
 
+
     public void addVoteAsync(UUID uuid, String playerName, String serviceName, String timestamp) {
         CompletableFuture.runAsync(() -> {
-            String query = "INSERT INTO votes (player_uuid, player_name, service_name, vote_time) VALUES (?, ?, ?, ?)";
+            String table = getTableName();
+            String query = "INSERT INTO " + table + " (player_uuid, player_name, service_name, vote_time) VALUES (?, ?, ?, ?)";
             try (PreparedStatement stmt = connection.prepareStatement(query)) {
                 stmt.setString(1, uuid.toString());
                 stmt.setString(2, playerName);
@@ -79,29 +113,20 @@ public class VoteDatabaseManager {
 
     public CompletableFuture<Boolean> hasVotedTodayAsync(UUID uuid, String playerName) {
         return CompletableFuture.supplyAsync(() -> {
-            String query = "SELECT vote_time FROM votes WHERE player_uuid = ? ORDER BY vote_time DESC LIMIT 1";
+            String table = getTableName();
+            String query = "SELECT vote_time FROM " + table +
+                    " WHERE player_uuid = ? OR LOWER(player_name) = LOWER(?) ORDER BY vote_time DESC LIMIT 1";
 
             try (PreparedStatement stmt = connection.prepareStatement(query)) {
                 stmt.setString(1, uuid.toString());
+                stmt.setString(2, playerName);
                 ResultSet rs = stmt.executeQuery();
 
-                if (!rs.next()) {
-                    if (plugin.getConfig().getBoolean("debug")) {
-                        plugin.getLogger().info("[DEBUG] " + playerName + " has no votes on record ❌");
-                    }
-                    return false;
-                }
+                if (!rs.next()) return false;
 
                 String rawTime = rs.getString("vote_time");
-                java.time.LocalDateTime voteDateTime;
-                try {
-                    voteDateTime = java.time.LocalDateTime.parse(rawTime);
-                } catch (Exception ex) {
-                    if (plugin.getConfig().getBoolean("debug")) {
-                        plugin.getLogger().warning("[DEBUG] Bad vote_time format: " + rawTime + " → treating as not voted.");
-                    }
-                    return false;
-                }
+                java.time.LocalDateTime voteDateTime = java.time.LocalDateTime.parse(rawTime);
+
                 ZoneId zone = resolveZoneIdSafe(SettingKey.VOTE_RESET_TIMEZONE.get());
                 long voteMillis = voteDateTime.atZone(zone).toInstant().toEpochMilli();
                 long nowMillis = java.time.ZonedDateTime.now(zone).toInstant().toEpochMilli();
@@ -110,43 +135,18 @@ public class VoteDatabaseManager {
                 boolean isDuration = isDurationFormat(resetRule);
                 boolean isDailyTime = isDailyTimeFormat(resetRule);
 
-                boolean valid;
-
                 if (isDuration) {
                     long windowMs = parseDurationMillis(resetRule);
-                    long diff = nowMillis - voteMillis;
-                    valid = diff <= windowMs;
-
-                    if (plugin.getConfig().getBoolean("debug")) {
-                        long hours = diff / 3_600_000;
-                        long minutes = (diff % 3_600_000) / 60_000;
-                        long seconds = (diff % 60_000) / 1000;
-                        String timeAgo = String.format("%dh %dm %ds", hours, minutes, seconds);
-                        plugin.getLogger().info("[DEBUG] mode=ROLLING(" + resetRule + ", tz=" + zone + ") " + playerName +
-                                " last vote: " + rawTime + " (" + timeAgo + " ago) → " + (valid ? "VALID ✅" : "EXPIRED ❌"));
-                    }
+                    return (nowMillis - voteMillis) <= windowMs;
                 } else if (isDailyTime) {
                     java.time.LocalTime resetAt = java.time.LocalTime.parse(padDailyTime(resetRule));
                     long lastResetMillis = computeLastResetMillis(resetAt, zone);
-                    valid = voteMillis >= lastResetMillis;
-
-                    if (plugin.getConfig().getBoolean("debug")) {
-                        java.time.Instant lastResetInstant = java.time.Instant.ofEpochMilli(lastResetMillis);
-                        plugin.getLogger().info("[DEBUG] mode=DAILY(" + resetAt + ", tz=" + zone + ") lastReset=" + lastResetInstant +
-                                " | " + playerName + " last vote: " + rawTime + " → " + (valid ? "VALID ✅" : "EXPIRED ❌"));
-                    }
+                    return voteMillis >= lastResetMillis;
                 } else {
-                    long diff = nowMillis - voteMillis;
-                    valid = diff <= 86_400_000L;
-                    if (plugin.getConfig().getBoolean("debug")) {
-                        plugin.getLogger().warning("[DEBUG] vote-reset='" + resetRule + "' invalid. Falling back to 24h (tz=" + zone + ").");
-                    }
+                    return (nowMillis - voteMillis) <= 86_400_000L;
                 }
-
-                return valid;
-
             } catch (Exception e) {
-                plugin.getLogger().severe("Failed to check vote for " + playerName + " (" + uuid + "): " + e.getMessage());
+                plugin.getLogger().severe("Failed to check vote for " + playerName + ": " + e.getMessage());
                 return false;
             }
         }, dbExecutor);
@@ -183,6 +183,91 @@ public class VoteDatabaseManager {
             }
         }, dbExecutor);
     }
+
+    public CompletableFuture<Integer> migrateAsync(String from, String to) {
+        return CompletableFuture.supplyAsync(() -> {
+            int migrated = 0;
+            try {
+                String fromType = from.trim().toUpperCase();
+                String toType = to.trim().toUpperCase();
+
+                if (fromType.equals(toType)) {
+                    plugin.getLogger().warning("[VoteChecker] Migration skipped: same database type (" + fromType + ")");
+                    return 0;
+                }
+
+                plugin.getLogger().info("[VoteChecker] Starting migration: " + fromType + " → " + toType + " ...");
+
+                File folder = plugin.getDataFolder();
+                String sqlitePath = folder.getAbsolutePath() + File.separator + "votes.db";
+
+                String host = SettingKey.MYSQL_HOST.get();
+                int port = SettingKey.MYSQL_PORT.get();
+                String db = SettingKey.MYSQL_DATABASE.get();
+                String user = SettingKey.MYSQL_USER.get();
+                String pass = SettingKey.MYSQL_PASSWORD.get();
+                boolean ssl = SettingKey.MYSQL_USE_SSL.get();
+                String tablePrefix = SettingKey.MYSQL_TABLE_PREFIX.get();
+
+                Connection sqlite = DriverManager.getConnection("jdbc:sqlite:" + sqlitePath);
+                Connection mysql = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + db +
+                        "?useSSL=" + ssl + "&autoReconnect=true", user, pass);
+
+                String sqliteTable = "votes";
+                String mysqlTable = tablePrefix + "votes";
+
+                if (fromType.equals("SQLITE")) {
+                    plugin.getLogger().info("→ Migrating local (SQLite) → global (MySQL) ...");
+                    migrated = copyTable(sqlite, sqliteTable, mysql, mysqlTable);
+                } else {
+                    plugin.getLogger().info("→ Migrating global (MySQL) → local (SQLite) ...");
+                    migrated = copyTable(mysql, mysqlTable, sqlite, sqliteTable);
+                }
+
+                sqlite.close();
+                mysql.close();
+                plugin.getLogger().info("[VoteChecker] Migration complete → " + migrated + " entries ✅");
+                return migrated;
+
+            } catch (Exception e) {
+                plugin.getLogger().severe("[VoteChecker] Migration failed: " + e.getMessage());
+                e.printStackTrace();
+                return 0;
+            }
+        }, dbExecutor);
+    }
+
+    private int copyTable(Connection src, String srcTable, Connection dest, String destTable) throws SQLException {
+        int count = 0;
+        String select = "SELECT player_uuid, player_name, service_name, vote_time FROM " + srcTable;
+        String insert = "INSERT INTO " + destTable + " (player_uuid, player_name, service_name, vote_time) VALUES (?, ?, ?, ?)";
+
+        try (PreparedStatement selectStmt = src.prepareStatement(select);
+             ResultSet rs = selectStmt.executeQuery();
+             PreparedStatement insertStmt = dest.prepareStatement(insert)) {
+
+            while (rs.next()) {
+                String uuid = rs.getString("player_uuid");
+                String time = rs.getString("vote_time");
+
+                try (PreparedStatement check = dest.prepareStatement(
+                        "SELECT 1 FROM " + destTable + " WHERE player_uuid=? AND vote_time=? LIMIT 1")) {
+                    check.setString(1, uuid);
+                    check.setString(2, time);
+                    if (check.executeQuery().next()) continue;
+                }
+
+                insertStmt.setString(1, uuid);
+                insertStmt.setString(2, rs.getString("player_name"));
+                insertStmt.setString(3, rs.getString("service_name"));
+                insertStmt.setString(4, time);
+                insertStmt.executeUpdate();
+                count++;
+            }
+        }
+        return count;
+    }
+
 
     public void reconnect() {
         try {

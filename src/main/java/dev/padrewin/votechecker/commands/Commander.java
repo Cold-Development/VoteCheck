@@ -23,6 +23,7 @@ public class Commander extends CommandHandler {
         this.registerCommand(new VersionCommand());
         this.registerCommand(new ClearDbCommand());
         this.registerCommand(new InfoCommand());
+        this.registerCommand(new MigrateCommand());
 
     }
 

@@ -84,18 +84,27 @@
     </build>
 
     <repositories>
+
         <repository>
             <id>colddev-repo</id>
             <url>https://repo.colddev.dev/</url>
         </repository>
+
         <repository>
             <id>papermc-repo</id>
             <url>https://repo.papermc.io/repository/maven-public/</url>
         </repository>
+
         <repository>
             <id>sonatype</id>
             <url>https://oss.sonatype.org/content/groups/public/</url>
         </repository>
+
+        <repository>
+            <id>placeholderapi</id>
+            <url>https://repo.extendedclip.com/content/repositories/placeholderapi/</url>
+        </repository>
+
     </repositories>
 
     <dependencies>
@@ -103,7 +112,7 @@
         <dependency>
             <groupId>dev.padrewin</groupId>
             <artifactId>colddev</artifactId>
-            <version>1.5.0</version>
+            <version>1.5.1</version>
             <scope>compile</scope>
         </dependency>
 
@@ -118,6 +127,13 @@
             <groupId>com.vexsoftware</groupId>
             <artifactId>nuvotifier-universal</artifactId>
             <version>2.7.3</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>me.clip</groupId>
+            <artifactId>placeholderapi</artifactId>
+            <version>2.11.6</version>
             <scope>provided</scope>
         </dependency>
 

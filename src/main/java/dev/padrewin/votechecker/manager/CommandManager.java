@@ -25,7 +25,8 @@ public class CommandManager extends Manager {
         VERSION,
         CLEARDB,
         INFO,
-        HELP;
+        HELP,
+        MIGRATE;
 
         private List<String> aliases;
 

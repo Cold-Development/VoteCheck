@@ -1,5 +1,5 @@
 name: VoteChecker
-version: '@version@'
+version: '1.0.0'
 main: dev.padrewin.votechecker.VoteChecker
 api-version: '1.21'
 authors: [ padrewin ]
