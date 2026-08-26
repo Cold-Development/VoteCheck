@@ -6,11 +6,15 @@ import dev.padrewin.colddev.manager.Manager;
 import dev.padrewin.colddev.manager.PluginUpdateManager;
 import dev.padrewin.votechecker.hook.CommandInterceptor;
 //import dev.padrewin.votechecker.listeners.VoteCheckListener;
+import dev.padrewin.votechecker.listeners.PlayerJoinListener;
+import dev.padrewin.votechecker.listeners.PlayerQuitListener;
 import dev.padrewin.votechecker.manager.CommandManager;
 import dev.padrewin.votechecker.manager.LocaleManager;
+import dev.padrewin.votechecker.manager.VoteCacheManager;
 import dev.padrewin.votechecker.placeholders.VoteExpansion;
 import dev.padrewin.votechecker.setting.SettingKey;
 import dev.padrewin.votechecker.database.VoteDatabaseManager;
+import dev.padrewin.votechecker.listeners.BattlePassProgressListener;
 import dev.padrewin.votechecker.listeners.VoteListener;
 import org.bukkit.Bukkit;
 
@@ -34,6 +38,8 @@ public final class VoteChecker extends ColdPlugin {
     private static VoteChecker instance;
     private VoteDatabaseManager database;
 
+    private VoteCacheManager voteCacheManager;
+
     public VoteChecker() {
         super("Cold-Development", "VoteChecker", -1, null, LocaleManager.class, null);
         instance = this;
@@ -43,10 +49,18 @@ public final class VoteChecker extends ColdPlugin {
     public void enable() {
         instance = this;
         this.database = new VoteDatabaseManager(this);
+        this.voteCacheManager = new VoteCacheManager(this);
 
         // Register listeners
         //getServer().getPluginManager().registerEvents(new VoteCheckListener(), this);
+        getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
         getServer().getPluginManager().registerEvents(new VoteListener(this), this);
+        if (Bukkit.getPluginManager().isPluginEnabled("BattlePass")) {
+            getServer().getPluginManager().registerEvents(new BattlePassProgressListener(this), this);
+            getLogger().info(ANSI_GREEN + "BattlePass vote progression guard enabled." + ANSI_RESET);
+        }
+        getServer().getPluginManager().registerEvents(new PlayerQuitListener(this), this);
+        warmupOnlinePlayers();
         getManager(PluginUpdateManager.class);
 
         // Register PlaceholderAPI expansion with delay
@@ -92,6 +106,11 @@ public final class VoteChecker extends ColdPlugin {
         if (database != null) {
             database.shutdown();
         }
+
+        if (voteCacheManager != null) {
+            voteCacheManager.clear();
+        }
+
         getLogger().info("");
         getLogger().info(ANSI_PURPLE + "VoteChecker disabled." + ANSI_RESET);
         getLogger().info("");
@@ -139,6 +158,20 @@ public final class VoteChecker extends ColdPlugin {
 
     public VoteDatabaseManager getDatabase() {
         return database;
+    }
+
+    public VoteCacheManager getVoteCacheManager() {
+        return voteCacheManager;
+    }
+
+    private void warmupOnlinePlayers() {
+        if (voteCacheManager == null) {
+            return;
+        }
+
+        Bukkit.getOnlinePlayers().forEach(player ->
+                voteCacheManager.checkAsync(player.getUniqueId(), player.getName())
+        );
     }
 
 }

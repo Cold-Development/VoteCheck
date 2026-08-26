@@ -112,7 +112,7 @@
         <dependency>
             <groupId>dev.padrewin</groupId>
             <artifactId>colddev</artifactId>
-            <version>1.5.1</version>
+            <version>1.5.0</version>
             <scope>compile</scope>
         </dependency>
 
@@ -135,6 +135,14 @@
             <artifactId>placeholderapi</artifactId>
             <version>2.11.6</version>
             <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.battlepass</groupId>
+            <artifactId>BattlePass</artifactId>
+            <version>5.0.4</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/BattlePass-5.0.4.jar</systemPath>
         </dependency>
 
     </dependencies>

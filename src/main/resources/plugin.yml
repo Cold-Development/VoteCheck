@@ -4,6 +4,7 @@ main: dev.padrewin.votechecker.VoteChecker
 api-version: '1.21'
 authors: [ padrewin ]
 depend: [Votifier, PlaceholderAPI]
+softdepend: [BattlePass]
 
 commands:
   votechecker:

@@ -25,18 +25,33 @@ public class VoteListener implements Listener {
         Vote vote = event.getVote();
         String name = vote.getUsername();
 
-        if (name == null || name.isBlank()) return;
+        if (name == null || name.isBlank()) {
+            return;
+        }
 
         Player player = Bukkit.getPlayerExact(name);
-        UUID uuid = player != null ? player.getUniqueId() : Bukkit.getOfflinePlayer(name).getUniqueId();
+        UUID uuid = player != null
+                ? player.getUniqueId()
+                : Bukkit.getOfflinePlayer(name).getUniqueId();
 
-        String service = vote.getServiceName() != null ? vote.getServiceName() : "unknown";
+        String service = vote.getServiceName() != null
+                ? vote.getServiceName()
+                : "unknown";
+
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
+        // Salvăm votul în DB async.
         plugin.getDatabase().addVoteAsync(uuid, name, service, timestamp);
 
+        // Actualizăm cache-ul imediat, pentru ca playerul să poată progresa instant.
+        if (plugin.getVoteCacheManager() != null) {
+            plugin.getVoteCacheManager().markVoted(uuid);
+        }
+
         if (plugin.getConfig().getBoolean("debug")) {
-            plugin.getLogger().info("[DEBUG] Logged vote for " + name + " (" + uuid + ") from " + service);
+            plugin.getLogger().info("[DEBUG] Logged vote for "
+                    + name + " (" + uuid + ") from "
+                    + service + " and updated vote cache.");
         }
     }
 }
