@@ -67,6 +67,14 @@ public class SettingKey {
 
     public static final ColdSetting<String> BASE_COMMAND_REDIRECT = create("base-command-redirect", STRING, "", "Which command should we redirect to when using '/votechecker' with no subcommand specified?", "You can use a value here such as 'version' to show the output of '/votechecker version'", "If you have any aliases defined, do not use them here", "If left as blank, the default behavior of showing '/votechecker version' with bypassed permissions will be used");
 
+    public static final ColdSetting<String> OFFLINE_UUID_MODE = create(
+            "offline-uuid-mode", STRING, "AUTO",
+            "How to build the UUID of a voter that has never joined the server.",
+            "AUTO  - offline UUIDs when the server runs in offline mode, otherwise a Mojang lookup",
+            "TRUE  - always offline UUIDs (cracked servers), never contacts Mojang",
+            "FALSE - always a Mojang lookup (set this if you run online mode behind a proxy)"
+    );
+
     public static final ColdSetting<Boolean> DEBUG = create("debug", BOOLEAN, false,
             "Enable or disable debug logging for VoteChecker.");
 

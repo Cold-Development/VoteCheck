@@ -6,7 +6,7 @@
 
     <groupId>dev.padrewin</groupId>
     <artifactId>votechecker</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
     <packaging>jar</packaging>
 
     <name>VoteChecker</name>
@@ -140,9 +140,9 @@
         <dependency>
             <groupId>io.github.battlepass</groupId>
             <artifactId>BattlePass</artifactId>
-            <version>5.0.4</version>
+            <version>5.0.12</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/libs/BattlePass-5.0.4.jar</systemPath>
+            <systemPath>${project.basedir}/libs/BattlePass-5.0.12.jar</systemPath>
         </dependency>
 
     </dependencies>

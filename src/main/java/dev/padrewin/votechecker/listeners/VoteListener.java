@@ -3,8 +3,8 @@ package dev.padrewin.votechecker.listeners;
 import com.vexsoftware.votifier.model.Vote;
 import com.vexsoftware.votifier.model.VotifierEvent;
 import dev.padrewin.votechecker.VoteChecker;
+import dev.padrewin.votechecker.util.PlayerUUIDResolver;
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
@@ -29,17 +29,38 @@ public class VoteListener implements Listener {
             return;
         }
 
-        Player player = Bukkit.getPlayerExact(name);
-        UUID uuid = player != null
-                ? player.getUniqueId()
-                : Bukkit.getOfflinePlayer(name).getUniqueId();
-
         String service = vote.getServiceName() != null
                 ? vote.getServiceName()
                 : "unknown";
 
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
+        // Playerul e online, în usercache, sau serverul e offline mode: fără rețea.
+        UUID uuid = PlayerUUIDResolver.resolveWithoutNetwork(name);
+        if (uuid != null) {
+            handleVote(uuid, name, service, timestamp);
+            return;
+        }
+
+        // Nume necunoscut pe un server online mode: rezolvarea lovește API-ul
+        // Mojang și blochează tick-ul, așa că o mutăm de pe thread-ul principal.
+        if (!plugin.isEnabled()) {
+            return;
+        }
+
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            UUID resolved = PlayerUUIDResolver.resolveBlocking(name);
+
+            if (resolved == null) {
+                plugin.getLogger().warning("[VoteChecker] Could not resolve UUID for voter " + name + ", vote not logged.");
+                return;
+            }
+
+            handleVote(resolved, name, service, timestamp);
+        });
+    }
+
+    private void handleVote(UUID uuid, String name, String service, String timestamp) {
         // Salvăm votul în DB async.
         plugin.getDatabase().addVoteAsync(uuid, name, service, timestamp);
 
